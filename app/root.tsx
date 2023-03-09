@@ -1,10 +1,11 @@
-import type { MetaFunction } from "@remix-run/node";
-import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
+import type { LoaderArgs, MetaFunction } from "@remix-run/node";
+import { Links, LiveReload, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from "@remix-run/react";
 import React from "react";
 import { withEmotionCache } from "@emotion/react";
 import ServerStyleContext from "./context.server";
 import ClientStyleContext from "./context.client";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, ColorMode } from "@chakra-ui/react";
+import { theme } from "./theme";
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
@@ -15,6 +16,13 @@ export const meta: MetaFunction = () => ({
 interface DocumentProps {
   children: React.ReactNode;
   title?: string;
+}
+
+export async function loader({ request }: LoaderArgs) {
+  const cookies = request.headers.get("Cookie");
+  const colorScheme = (cookies?.includes("chakra-ui-color-mode=dark") ? "dark" : "light") as ColorMode;
+
+  return { colorScheme };
 }
 
 const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCache) => {
@@ -35,8 +43,11 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
     clientStyleData.reset();
   }, []);
 
+  const { colorScheme } = useLoaderData<typeof loader>();
+  theme.config.initialColorMode = colorScheme;
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={colorScheme} style={{ colorScheme }}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -53,7 +64,7 @@ const Document = withEmotionCache(({ children, title }: DocumentProps, emotionCa
         ))}
       </head>
       <body>
-        <ChakraProvider>{children}</ChakraProvider>
+        <ChakraProvider theme={theme}>{children}</ChakraProvider>
         <ScrollRestoration />
         <Scripts />
         {process.env.NODE_ENV === "development" && <LiveReload />}
