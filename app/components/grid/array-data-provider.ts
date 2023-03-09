@@ -8,5 +8,6 @@ export function arrayDataProvider<T>(data: T[]) {
       const cursor = props.perPage * props.page;
       return data.slice(cursor - props.perPage, cursor);
     },
+    getTotalCount: () => data.length,
   };
 }
